@@ -1,0 +1,87 @@
+version: '2'
+services:
+    deluge:
+        image: ghcr.io/linuxserver/deluge
+        container_name: deluge
+        network_mode: host
+        environment:
+          - PUID=0
+          - PGID=0
+          - TZ=Europe/London
+          - DELUGE_LOGLEVEL=error
+        volumes:
+          - /mnt/HDD1/configs/deluge:/config
+          - /mnt/HDD1/downloads:/downloads
+        restart: unless-stopped
+    plex:
+        image: linuxserver/plex
+        container_name: plex
+        volumes:
+            - /mnt/HDD1/configs/plex:/config
+            - /mnt/HDD1/plex/Movies:/data/movies
+            - /mnt/HDD1/plex/Shows:/data/tvshows
+        network_mode: host
+        restart: unless-stopped
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Europe/London
+            - VERSION=docker
+    jackett:
+        image: ghcr.io/linuxserver/jackett
+        container_name: jackett
+        environment:
+        - PUID=0
+        - PGID=0
+        - TZ=Europe/London
+        volumes:
+        - /mnt/HDD1/configs/jackett:/config
+        - /mnt/HDD1/downloads:/downloads
+        ports:
+        - 9117:9117
+        restart: unless-stopped
+    sonarr:
+        image: linuxserver/sonarr
+        container_name: sonarr
+        depends_on:
+            - deluge
+            - jackett
+        volumes:
+            - /mnt/HDD1/configs/sonarr:/config
+            - /mnt/HDD1/downloads:/downloads
+            - /mnt/HDD1/plex/Shows:/tv
+        environment:
+            - PUID=0
+            - PGID=0
+            - TZ=Europe/London
+        ports:
+            - 8989:8989
+        restart: unless-stopped
+    radarr:
+        image: linuxserver/radarr
+        container_name: radarr
+        depends_on:
+            - deluge
+            - jackett
+        volumes:
+            - /mnt/HDD1/configs/radarr:/config
+            - /mnt/HDD1/downloads:/downloads
+            - /mnt/HDD1/plex/Movies:/movies
+        environment:
+            - PUID=0
+            - PGID=0
+            - TZ=Europe/London
+        ports:
+            - 7878:7878
+        restart: unless-stopped
+    overseerr:
+        image: ghcr.io/hotio/overseerr:nightly-1333e55@sha256:3e03b6804417bbbfc8253c7d267b30193020a0791058b07d82dc6314ebd02a12
+        container_name: overseerr
+        environment:
+            - LOG_LEVEL=info
+            - TZ=Europe/London
+        ports:
+            - 5055:5055
+        volumes:
+            - /mnt/HDD1/configs/overseerr:/app/config
+        restart: unless-stopped
